@@ -1,0 +1,1 @@
+select start_time,status,end_time,input_type from v$rman_backup_job_details;
