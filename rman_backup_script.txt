@@ -1,0 +1,37 @@
+ORACLE_HOME=/u02/app/oracle/product/19c/dbhome_1
+export ORACLE_HOME
+ORACLE_SID=DEVDB
+export ORACLE_SID
+ORACLE_TERM=386
+export ORACLE_TERM
+LD_LIBRARY_PATH=$ORACLE_HOME/lib:/usr/lib:/usr/java1.2/lib
+export LD_LIBRARY_PATH
+PATH=$ORACLE_HOME/bin:/bin:/usr/bin:/usr/ucb:/usr/ccs/bin
+export PATH
+
+dt=`date +%d%m%y`
+
+rman target / log /u02/backup/rman/test_rman_full_l0.log
+
+cd /u02/backup/rman
+
+/u02/app/oracle/product/19c/dbhome_1/bin/rman target sys/sys trace/u02/backup/rman/prod_rman_full_l02_$dt.log<<EOF
+
+run{
+    ALLOCATE CHANNEL disk1 DEVICE TYPE DISK FORMAT '/u02/backup/rman/DEVDB_%U_%T.%p';
+    ALLOCATE CHANNEL disk2 DEVICE TYPE DISK FORMAT '/u02/backup/rman/DEVDB_%U_%T.%p';
+    ALLOCATE CHANNEL disk3 DEVICE TYPE DISK FORMAT '/u02/backup/rman/DEVDB_%U_%T.%p';
+    ALLOCATE CHANNEL disk4 DEVICE TYPE DISK FORMAT '/u02/backup/rman/DEVDB_%U_%T.%p';
+    
+    crosscheck archivelog all;
+    delete noprompt expired archivelog all;
+    backup as compressed backupset incremental level 0 database plus archivelo;
+    backup current controlfile format '/u02/backup/rman/DEVDB_controlfile_%U_%T.%p'
+    crosscheck backupset;
+    delete noprompt expired backupset;
+    release channel disk1;
+    release channel disk2;
+    release channel disk3;
+    release channel disk4;
+    }
+    exit;
