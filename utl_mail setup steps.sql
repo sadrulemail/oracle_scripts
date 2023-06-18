@@ -1,3 +1,8 @@
+Author: Sadrul
+Linkedin Profile:https://www.linkedin.com/in/sadrulalom/
+Date: 16 June 2023
+
+
 UTL_MAIL setup for ORACLE(before setup confirm that SRV have SMTP replay and ASK SMTP SRV NAME)
 1. Check already setup or not
 select object_name,object_type,owner from dba_objects where object_name in('UTL_MAIL','UTL_SMTP');
