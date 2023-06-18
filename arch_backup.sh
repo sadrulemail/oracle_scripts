@@ -14,6 +14,9 @@ BK_DATE=$(date +%Y%m%d_%H%M%S)
 if [ ! -d "$ROOT_BACKUP_PATH" ]; then
     mkdir -p "$ROOT_BACKUP_PATH"
 fi
+retention_days=7;
+find ${ROOT_BACKUP_PATH} -type f -mtime +${retention_days} -name '$(hostname)_${ORACLE_SID}_*.alog' -execdir rm -- '{}' \;
+find ${ROOT_BACKUP_PATH} -type f -mtime +${retention_days} -name '${ORACLE_SID}_ARCHIVELOG_*.log' -execdir rm -- '{}' \;
 
 rman target / log=$ROOT_BACKUP_PATH/${ORACLE_SID}_ARCHIVELOG_${BK_DATE}.log << EOF
 run
