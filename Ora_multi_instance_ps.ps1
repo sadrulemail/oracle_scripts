@@ -60,8 +60,9 @@ foreach ($str in $CharArray) {
         }
          $SSHStream.Read();
          $SSHStream.Close();
+    write-host "************End Working on SID:/"$ORA_SID"/***************" -ForegroundColor Green
     }
-write-host "************End Working on SID:/"$ORA_SID"/***************" -ForegroundColor Green
+
 }
 
 #close session
