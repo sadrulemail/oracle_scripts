@@ -4,125 +4,83 @@
 --** Date: 14 June 2023
 --**********************************************
 
--- pl/sql code
-DECLARE 
-    html_scripts VARCHAR2(5000) :='';
-    warning_threshold integer :=15;
-    critical_threshold integer :=10;
-    row_count integer :=0;
-
-begin
-	select count(name) into row_count from v$asm_diskgroup where round((free_mb/total_mb)*100,2)<=warning_threshold;
-	if (row_count>0)
-	then
-		html_scripts := '<html><style>table, th, td {border:1px solid black;}</style>';
-		html_scripts := html_scripts||'<br/><br/><table><tr><th>Disk Name</th><th>Total GB</th><th>Available GB</th><th>PTC_FREE</th>';
-
-
-		for i in (select name,round(total_mb/1024,2) total_gb,
-				round(free_mb/1024,2) free_gb,round((free_mb/total_mb)*100,2) 
-				ptc_free from v$asm_diskgroup where round((free_mb/total_mb)*100,2)<=warning_threshold)
-
-		   loop
-			  html_scripts :=html_scripts||'<tr><td>'||i.name||'</td><td align="right">'||i.total_gb||'</td><td align="right">'||i.free_gb|| 
-				case	when i.ptc_free<=warning_threshold and i.ptc_free>critical_threshold then 
-							'</td><td align="right" bgcolor="yellow">'|| i.ptc_free||'</td></tr>'
-						when i.ptc_free<=critical_threshold then
-							'</td><td align="right" bgcolor="red">'|| i.ptc_free||'</td></tr>'
-						else 
-							'</td><td align="right">'|| i.ptc_free||'</td></tr>' 
-				end;
-		   end loop;
-		html_scripts :=html_scripts||'</table>'; --table end
-		html_scripts :=html_scripts||'</html>'; -- html end
-   end if;
-   dbms_output.Put_line(html_scripts);
-end;
-
-
--- pl/sql FUNCTION
-CREATE OR REPLACE FUNCTION ofunc_get_asm_disk_info_html
-RETURN VARCHAR2
+create or replace PROCEDURE proc_get_asm_diskgroup_notification
 AS
-	html_scripts VARCHAR2(5000) :='';
+    html_scripts VARCHAR2(5000) :='';
 	warning_threshold integer :=15;
 	critical_threshold integer :=10;
 	row_count integer :=0;
-begin
-	select count(name) into row_count from v$asm_diskgroup where round((free_mb/total_mb)*100,2)<=warning_threshold;
-	if (row_count>0)
-	then
-		html_scripts := '<html><style>table, th, td {border:1px solid black;}</style>';
-		html_scripts := html_scripts||'<br/><br/><table><tr><th>Disk Name</th><th>Total GB</th><th>Available GB</th><th>PTC_FREE</th>';
-
-
-		for i in (select name,round(total_mb/1024,2) total_gb,
-					round(free_mb/1024,2) free_gb,round((free_mb/total_mb)*100,2) 
-					ptc_free from v$asm_diskgroup where round((free_mb/total_mb)*100,2)<=warning_threshold)
-		loop
-			html_scripts :=html_scripts||'<tr><td>'||i.name||'</td><td align="right">'||i.total_gb||'</td><td align="right">'||i.free_gb|| 
-			case when i.ptc_free<=warning_threshold and i.ptc_free>critical_threshold then 
-					'</td><td align="right" bgcolor="yellow">'|| i.ptc_free||'</td></tr>'
-				when i.ptc_free<=critical_threshold then
-					'</td><td align="right" bgcolor="red">'|| i.ptc_free||'</td></tr>'
-				else 
-					'</td><td align="right">'|| i.ptc_free||'</td></tr>' 
-			end;
-		end loop;
-		html_scripts :=html_scripts||'</table>'; --table end
-		html_scripts :=html_scripts||'</html>'; -- html end
-
-	--dbms_output.Put_line(html_scripts);
-	end if;
-return html_scripts;
-end;
-
---execute pl/sql function
---select get_asm_disk_info_html from dual;
-
-declare html_s varchar2(5000);
 BEGIN
-    html_s := ofunc_get_asm_disk_info_html();
-    DBMS_OUTPUT.PUT_LINE(html_s);
-END;
-
-
--- pl/sql PROCEDURE
-
-CREATE OR REPLACE PROCEDURE oproc_get_asm_disk_info_html
-AS
-	html_scripts VARCHAR2(5000) :='';
-	warning_threshold integer :=100;
-	critical_threshold integer :=90;
-	row_count integer :=0;
-begin
 	select count(name) into row_count from v$asm_diskgroup where round((free_mb/total_mb)*100,2)<=warning_threshold;
-	if (row_count>0)
-	then
+	IF (row_count>0)
+	THEN
 		html_scripts := '<html><style>table, th, td {border:1px solid black;}</style>';
 		html_scripts := html_scripts||'<br/><br/><table><tr><th>Disk Name</th><th>Total GB</th><th>Available GB</th><th>PTC_FREE</th>';
 
-
-		for i in (select name,round(total_mb/1024,2) total_gb,
-					round(free_mb/1024,2) free_gb,round((free_mb/total_mb)*100,2) 
-					ptc_free from v$asm_diskgroup where round((free_mb/total_mb)*100,2)<=warning_threshold)
-		loop
+		FOR i IN (select name,round(total_mb/1024,2) total_gb,round(free_mb/1024,2) free_gb,round((free_mb/total_mb)*100,2) 
+					ptc_free from v$asm_diskgroup)
+		LOOP
 			html_scripts :=html_scripts||'<tr><td>'||i.name||'</td><td align="right">'||i.total_gb||'</td><td align="right">'||i.free_gb|| 
-			case when i.ptc_free<=warning_threshold and i.ptc_free>critical_threshold then 
+			CASE WHEN i.ptc_free<=warning_threshold AND i.ptc_free>critical_threshold THEN 
 					'</td><td align="right" bgcolor="yellow">'|| i.ptc_free||'</td></tr>'
-				when i.ptc_free<=critical_threshold then
+				WHEN i.ptc_free<=critical_threshold THEN
 					'</td><td align="right" bgcolor="red">'|| i.ptc_free||'</td></tr>'
-				else 
+				ELSE 
 					'</td><td align="right">'|| i.ptc_free||'</td></tr>' 
-			end;
-		end loop;
-		html_scripts :=html_scripts||'</table>'; --table end
-		html_scripts :=html_scripts||'</html>'; -- html end
+			END;
+		END LOOP;
+		html_scripts :=html_scripts||'</table>'; --table end        
+        html_scripts :=html_scripts|| '<br/><br/><b>Thank you,</b><br/><b>DBA Team</b>';
+        html_scripts :=html_scripts||'</html>'; -- html end
 
-	--dbms_output.Put_line(html_scripts);
-	end if;
-dbms_output.Put_line(html_scripts);
+        UTL_MAIL.send(sender     => SYS_CONTEXT ('USERENV', 'SERVER_HOST')||'@LearnWithSadrul.com',
+            recipients => 'sadrul.email@gmail.com',
+            subject    => 'ASM DiskGroup Space Notification ('||SYS_CONTEXT ('USERENV', 'SERVER_HOST')||'/'||SYS_CONTEXT('USERENV','INSTANCE_NAME')||')',
+            message    => html_scripts,
+            mime_type    => 'text/html');
+    END IF;
+END;
+/
+
+-- create program for job, it is the mail action
+begin
+  DBMS_SCHEDULER.create_program (
+    program_name        => 'get_asm_diskgroup_notification_prog',
+    program_type        => 'STORED_PROCEDURE',
+    program_action      => 'proc_get_asm_diskgroup_notification',
+    enabled             => true,
+    comments            => 'ASM diskgrop notification based on free PTC');
 end;
+/
+-- create schedule
+begin
+dbms_scheduler.create_schedule
+(
+schedule_name => 'Hourly_Interval_4',
+start_date      => SYSTIMESTAMP,
+repeat_interval => 'freq=hourly; interval=4; byminute=0; bysecond=0;',
+comments => 'Hourly_Interval_4'
+);
+end;
+/
+-- create job
+begin
+dbms_scheduler.create_job
+(
+job_name => 'GET_ASM_DISKGROUP_NOTIFICATION_JOB',
+program_name => 'get_asm_diskgroup_notification_prog',
+schedule_name => 'Hourly_Interval_4',
+comments => 'SEND MAIL ABOUT ASM DISK SPACE.',
+enabled => TRUE
+);
+end;
+/
 
--- exe procedure
-EXECUTE oproc_get_asm_disk_info_html;
+-- add job fail notification
+BEGIN
+ DBMS_SCHEDULER.add_job_email_notification (
+  job_name   =>  'GET_ASM_DISKGROUP_NOTIFICATION_JOB',
+  recipients =>  'sadrul.email@gmail.com',
+  events     =>  'JOB_FAILED');
+END;
+/
